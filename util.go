@@ -1,7 +1,6 @@
 package main
 
 import (
-	// "fmt"
 	"os"
 	"os/exec"
 	"os/user"
@@ -10,7 +9,7 @@ import (
 	"strings"
 )
 
-const lsbPath string = "/etc/lsb-release"
+const lsbPath string = "/etc/os-release"
 const memFile string = "/proc/meminfo"
 
 /*
@@ -63,8 +62,8 @@ func distroName() (string, string) {
 	lsbFile, _ := os.ReadFile(lsbPath)
 	lsbContent := string(lsbFile)
 
-	regexpName := regexp.MustCompile(`DISTRIB_DESCRIPTION="([^"]+)"`)
-	regexpVersion := regexp.MustCompile(`DISTRIB_RELEASE="([^"]+)"`)
+	regexpName := regexp.MustCompile(`PRETTY_NAME="([^"]+)"`)
+	regexpVersion := regexp.MustCompile(`(?m)BUILD_ID=([^"]+$)`)
 
 	nameMatch := regexpName.FindStringSubmatch(lsbContent)
 	versionMatch := regexpVersion.FindStringSubmatch(lsbContent)

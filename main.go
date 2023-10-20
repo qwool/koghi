@@ -2,26 +2,27 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 )
 
-func catch(err error) {
-	if err != nil {
-		log.Printf("err: %v\n", err)
-	}
+// config starts here
+
+var conf = Config{
+	countPkg:     true,    // slows down by 10ms
+	presetWMName: "ababa", // might be useful for wayland, leave blank for no
 }
 
+// this doesnt line up properly by default, pad with spaces
 var ascii string = `             
   |\'/-..--. 
  / _ _   ,  ;
 '~='Y'~_<._./
  <'-....__.' `
 
-func colASCII(arr []string, line int) string {
-	return fmt.Sprintf("\x1b[1m\x1b[90m" + arr[line] + "\x1b[0m")
-}
+// config ends here
+
 func main() {
+
 	asciiArray := strings.Split(ascii, "\n")
 	// for _, v := range asciiArray {
 	// 	if v == "" {

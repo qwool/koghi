@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"os/user"
@@ -11,6 +12,21 @@ import (
 
 const lsbPath string = "/etc/os-release"
 const memFile string = "/proc/meminfo"
+
+type Config struct {
+	countPkg     bool
+	presetWMName string
+}
+
+func catch(err error) {
+	if err != nil {
+		fmt.Println("err: %v\n", err)
+	}
+}
+
+func colASCII(arr []string, line int) string {
+	return fmt.Sprintf("\x1b[1m\x1b[90m" + arr[line] + "\x1b[0m")
+}
 
 /*
 this cut code by like 10loc instantly and made me able to read it
@@ -23,15 +39,24 @@ func regexpInByteArr(array []byte, regexp regexp.Regexp, index int) string {
 }
 
 func wm() string {
+	if conf.presetWMName != "" {
+		return conf.presetWMName
+	}
 	currentDesktop := os.Getenv("XDG_CURRENT_DESKTOP")
 	if currentDesktop != "" {
 		return currentDesktop
+	} // if you have env variable XDG_CURRENT_DESKTOP it shaves off like 10ms sometimes
+	propsID, err := exec.Command("xprop", "-root", "-notype", "_NET_SUPPORTING_WM_CHECK").Output()
+	if err != nil {
+		return ""
 	}
-	propsID, _ := exec.Command("xprop", "-root", "-notype", "_NET_SUPPORTING_WM_CHECK").Output()
 	//tell me if regexp is wrong
 	winid := regexpInByteArr(propsID, *regexp.MustCompile(`0x.*`), 0)
 	wmNameRegexp := regexp.MustCompile(`.*?_NET_WM_NAME = "(.*)"`)
-	wmProps, _ := exec.Command("xprop", "-id", winid, "-notype").CombinedOutput()
+	wmProps, err := exec.Command("xprop", "-id", winid, "-notype").CombinedOutput()
+	if err != nil {
+		return ""
+	}
 	WM_NAME := wmNameRegexp.FindStringSubmatch(string(wmProps))[1]
 	// commands for getting name from xprop got from neofetch!! everyone say thanks dylan araps!!!
 	return string(WM_NAME)
@@ -58,7 +83,25 @@ func kernelVersion() string {
 	return version
 }
 
+func archCountPkgs() (string, error) {
+	files, err := os.ReadDir("/var/lib/pacman/local")
+	if err != nil {
+		return "", err
+	}
+	return strconv.Itoa(len(files)), nil
+}
+
 func distroName() (string, string) {
+	if conf.countPkg == true {
+		_, err := os.Stat("/var/lib/pacman/local")
+		if err == nil {
+			pkgs, err := archCountPkgs()
+			if err != nil {
+				return "arch", ""
+			}
+			return "arch, pkgs:", pkgs
+		}
+	}
 	lsbFile, _ := os.ReadFile(lsbPath)
 	lsbContent := string(lsbFile)
 

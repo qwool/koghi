@@ -62,7 +62,7 @@ func wm() string {
 	return string(WM_NAME)
 }
 
-func memory() (int, int) {
+func memory() (string, string) {
 	contents, _ := os.ReadFile(memFile)
 
 	memTotal := regexpInByteArr(contents, *regexp.MustCompile(`.*?MemTotal:( *)(\d*)`), 2)
@@ -73,7 +73,7 @@ func memory() (int, int) {
 
 	nonAvailable := intTotalMatch - intFreeMatch
 
-	return intTotalMatch / 1024, nonAvailable / 1024
+	return strconv.Itoa(intTotalMatch / 1024), strconv.Itoa(nonAvailable / 1024)
 }
 
 func kernelVersion() string {
@@ -84,6 +84,8 @@ func kernelVersion() string {
 }
 
 func archCountPkgs() (string, error) {
+	// yes, pacman -Q | wc -l exists but it takes 50ms to run
+	// and this seems considerably faster
 	files, err := os.ReadDir("/var/lib/pacman/local")
 	if err != nil {
 		return "", err

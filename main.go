@@ -8,8 +8,8 @@ import (
 // config starts here
 
 var conf = Config{
-	countPkg:     true,    // slows down by 10ms
-	presetWMName: "ababa", // might be useful for wayland, leave blank for no
+	countPkg:     true, // slows down by 10ms, only for Arch
+	presetWMName: "",   // might be useful for wayland, leave blank for no
 }
 
 // this doesnt line up properly by default, pad with spaces
@@ -38,13 +38,20 @@ func main() {
 	kernel := kernelVersion()
 	// catch(err)
 
+	cBold := "\x1b[1m"
+	cWhite := "\x1b[0m \x1b[1m\x1b[97m"
+	cCyan := "\x1b[36m"
+	cPorpur := "\x1b[35m"
+	cRed := "\x1b[31m"
+	cGreen := "\x1b[32m"
+
 	//define lines
 	lines := []string{
-		fmt.Sprintf("\x1b[1m\x1b[97m%s@%s\x1b[0m", username, hostname),
-		fmt.Sprintf("\x1b[1m\x1b[36m%s\x1b[0m \x1b[1m\x1b[97m%s %s\x1b[0m", "os", distro_name, distro_version),
-		fmt.Sprintf("\x1b[1m\x1b[35m%s\x1b[0m \x1b[1m\x1b[97m%dM/%dM\x1b[0m", "mem", memFree, mem),
-		fmt.Sprintf("\x1b[1m\x1b[31m%s\x1b[0m \x1b[1m\x1b[97m%s\x1b[0m", "wm", wm),
-		fmt.Sprintf("\x1b[1m\x1b[32m%s\x1b[0m \x1b[1m\x1b[97m%s\x1b[0m", "kernel", kernel),
+		cBold + username + hostname,
+		cBold + cCyan + "os" + cWhite + distro_name + distro_version,
+		cBold + cPorpur + "mem" + cWhite + memFree + mem,
+		cBold + cRed + "wm" + cWhite + wm,
+		cBold + cGreen + "kernel" + cWhite + kernel,
 	}
 	for i, v := range lines {
 		fmt.Printf("%s %s\n", colASCII(asciiArray, i), v)

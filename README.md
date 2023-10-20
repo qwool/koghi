@@ -1,7 +1,7 @@
 # koghi - a rly simple fetch in go
 
 ![11ms execution time](preview.png)
-> dasd aa desd desteny
+> dasd aa desd
 > asdfasdfasf
 > bambam
 > asdfasdf

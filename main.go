@@ -8,7 +8,7 @@ import (
 // config starts here
 
 var conf = Config{
-	countPkg:     true, // slows down by 10ms, only for Arch
+	countPkg:     true, // if not Arch does nothing, on arch counts packages, slows down by a few ms
 	presetWMName: "",   // might be useful for wayland, leave blank for no
 }
 
@@ -36,7 +36,6 @@ func main() {
 	distro_name, distro_version := distroName()
 	wm := wm()
 	kernel := kernelVersion()
-	// catch(err)
 
 	cBold := "\x1b[1m"
 	cWhite := "\x1b[0m \x1b[1m\x1b[97m"
@@ -45,11 +44,18 @@ func main() {
 	cRed := "\x1b[31m"
 	cGreen := "\x1b[32m"
 
-	//define lines
+	// yeah this was supposed to be a ternary operator
+	// osLine := (map[bool]string{conf.countPkg || : "os", !conf.countPkg: "pkgs"})["os" > "pkgs"]
+
+	var osLine string = "os"
+	if distro_version == "" {
+		osLine = "pkgs"
+	}
+	// define lines
 	lines := []string{
-		cBold + username + hostname,
-		cBold + cCyan + "os" + cWhite + distro_name + distro_version,
-		cBold + cPorpur + "mem" + cWhite + memFree + mem,
+		cBold + username + "@" + hostname,
+		cBold + cCyan + osLine + cWhite + distro_name + " " + distro_version,
+		cBold + cPorpur + "mem" + cWhite + memFree + "M/" + mem + "M",
 		cBold + cRed + "wm" + cWhite + wm,
 		cBold + cGreen + "kernel" + cWhite + kernel,
 	}

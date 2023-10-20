@@ -12,6 +12,9 @@ import (
 
 const lsbPath string = "/etc/os-release"
 const memFile string = "/proc/meminfo"
+const hostnameFile string = "/etc/hostname"
+const pacmanFile string = "/var/lib/pacman/local"
+const kernelVerFile string = "/proc/version"
 
 type Config struct {
 	countPkg     bool
@@ -77,8 +80,7 @@ func memory() (string, string) {
 }
 
 func kernelVersion() string {
-	file := "/proc/version"
-	content, _ := os.ReadFile(file)
+	content, _ := os.ReadFile(kernelVerFile)
 	version := regexpInByteArr(content, *regexp.MustCompile(`version (.*?) `), 1)
 	return version
 }
@@ -86,7 +88,7 @@ func kernelVersion() string {
 func archCountPkgs() (string, error) {
 	// yes, pacman -Q | wc -l exists but it takes 50ms to run
 	// and this seems considerably faster
-	files, err := os.ReadDir("/var/lib/pacman/local")
+	files, err := os.ReadDir(pacmanFile)
 	if err != nil {
 		return "", err
 	}
@@ -95,13 +97,13 @@ func archCountPkgs() (string, error) {
 
 func distroName() (string, string) {
 	if conf.countPkg == true {
-		_, err := os.Stat("/var/lib/pacman/local")
+		_, err := os.Stat(pacmanFile)
 		if err == nil {
 			pkgs, err := archCountPkgs()
 			if err != nil {
 				return "arch", ""
 			}
-			return "arch, pkgs:", pkgs
+			return pkgs, ""
 		}
 	}
 	lsbFile, _ := os.ReadFile(lsbPath)
@@ -119,7 +121,6 @@ func distroName() (string, string) {
 }
 
 func hostname() (string, error) {
-	hostnameFile := "/etc/hostname"
 	hostname, err := os.ReadFile(hostnameFile)
 	if err != nil {
 		return "", err

@@ -7,59 +7,102 @@ import (
 
 // config starts here
 
-var conf = Config{
-	countPkg:     true, // if not Arch does nothing, on arch counts packages, slows down by a few ms
-	presetWMName: "",   // might be useful for wayland, leave blank for no
+type Theme struct {
+	bold   string
+	white  string
+	cyan   string
+	purple string
+	red    string
+	green  string
 }
 
-// this doesnt line up properly by default, pad with spaces
-var ascii string = `             
-  |\'/-..--. 
+type Config struct {
+	countPkg     bool   // counts packages on arch, adds few ms
+	presetWMName string // for wayland, blank = disabled
+	theme        Theme  // color theme
+	format       Format // format strings for each line
+}
+
+type Format struct {
+	userHost string // format for username@hostname
+	distro   string // format for os/distro line
+	memory   string // format for memory info
+	wm       string // format for window manager
+	kernel   string // format for kernel version
+}
+
+var defaultTheme = Theme{
+	bold:   "\x1b[1m",
+	white:  "\x1b[0m \x1b[1m\x1b[97m",
+	cyan:   "\x1b[36m",
+	purple: "\x1b[35m",
+	red:    "\x1b[31m",
+	green:  "\x1b[32m",
+}
+
+var defaultFormat = Format{
+	userHost: "             %s@%s",
+	distro:   " %s%s%s%s%s %s",
+	memory:   "%s%s%s%s%sM/%sM",
+	wm:       "%s%s%s%s%s",
+	kernel:   " %s%s%s%s%s",
+}
+
+var conf = Config{
+	countPkg:     true,
+	presetWMName: "",
+	theme:        defaultTheme,
+	format:       defaultFormat,
+}
+
+// ascii art alignment done with spaces
+var ascii = `
+  |\'/-..--.
  / _ _   ,  ;
 '~='Y'~_<._./
- <'-....__.' `
-
-// config ends here
+ <'-....__.'
+ `
 
 func main() {
+	asciiLines := strings.Split(ascii, "\n")
 
-	asciiArray := strings.Split(ascii, "\n")
-	// for _, v := range asciiArray {
-	// 	if v == "" {
-	// 		asciiArray = append(asciiArray)
-	// 	}
-	// }
-	hostname, _ := hostname()
-	// catch(err)
-	username, _ := getUser()
-	mem, memFree := memory()
-	distro_name, distro_version := distroName()
-	wm := wm()
+	username, err := getUser()
+	if err != nil {
+		fmt.Printf("failed getting username: %v\n", err)
+		return
+	}
+
+	hostname, err := hostname()
+	if err != nil {
+		fmt.Printf("failed getting hostname: %v\n", err)
+		return
+	}
+
+	mem, memFree := get_memory()
+	distroName, distroVersion := distroName()
+	wmName := wm()
 	kernel := kernelVersion()
 
-	cBold := "\x1b[1m"
-	cWhite := "\x1b[0m \x1b[1m\x1b[97m"
-	cCyan := "\x1b[36m"
-	cPorpur := "\x1b[35m"
-	cRed := "\x1b[31m"
-	cGreen := "\x1b[32m"
-
-	// yeah this was supposed to be a ternary operator
-	// osLine := (map[bool]string{conf.countPkg || : "os", !conf.countPkg: "pkgs"})["os" > "pkgs"]
-
-	var osLine string = "os"
-	if distro_version == "" {
+	// arch vs other distros
+	osLine := "os"
+	if distroVersion == "" {
 		osLine = "pkgs"
 	}
-	// define lines
+
+	t := conf.theme
+	f := conf.format
+
 	lines := []string{
-		cBold + username + "@" + hostname,
-		cBold + cCyan + osLine + cWhite + distro_name + " " + distro_version,
-		cBold + cPorpur + "mem" + cWhite + memFree + "M/" + mem + "M",
-		cBold + cRed + "wm" + cWhite + wm,
-		cBold + cGreen + "kernel" + cWhite + kernel,
+		fmt.Sprintf("             %s@%s", username, hostname),
+	    fmt.Sprintf(f.distro, t.bold, t.cyan, osLine, t.white, distroName, distroVersion),
+	    fmt.Sprintf(f.memory, t.bold, t.purple, "mem", t.white, memFree, mem),
+	    fmt.Sprintf(f.wm, t.bold, t.red, "wm", t.white, wmName),
+	    fmt.Sprintf(f.kernel, t.bold, t.green, "kernel", t.white, kernel),
 	}
-	for i, v := range lines {
-		fmt.Printf("%s %s\n", colASCII(asciiArray, i), v)
-	} // fmt.Printf("%s@%s\n%s %s\n%s of %s\n%s\n%s\n", username, hostname, distro_name, distro_version, fmt.Sprint(memFree), fmt.Sprint(mem), wm, kernel)
+
+	for i, line := range lines {
+		if i < len(asciiLines) {
+			fmt.Printf("%s %s\n", colASCII(asciiLines, i), line)
+		}
+	}
 }

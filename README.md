@@ -1,7 +1,7 @@
 # koghi - a silly fast fetch in go
 
 yo just look at this
-FIVE ms under linux?? it's literally the same time as if you were to run `ls`. it's not even funny at this point
+FIFTEEN ms under linux?? it's literally the same time as if you were to run `ls`. it's not even funny at this point
 
 and it works on mac too!!
 ![5ms](repo/linux.png)

@@ -1,18 +1,10 @@
 # koghi - a silly fast fetch in go
 
 yo just look at this
-FIVE ms under linux?? it's literally the same time as if you were to run ls. its not even funny at this poimt
+FIVE ms under linux?? it's literally the same time as if you were to run `ls`. it's not even funny at this point
 
 and it works on mac too!!
 ![5ms](repo/linux.png)
-> dasd aa desd
-> asdfasdfasf
-> bambam
-> asdfasdf
-> edad balsl
-> AAAAAAAAA
-> ababababa
-> asdfasdf
 
 ## how to use
 requirements: ``go 1.21``
@@ -23,31 +15,85 @@ go build
 # to install it just copy it to any of your path dirs
 go build && sudo cp ./koghi /usr/bin/
 ```
+NixOS users: you'll probably want to replace the paths in util.go
 
 ## configuration
-for all the config check main.go!!
-you could customize it like this:
+all the config is managed in `main.go` for speed and simplicity!!
+for this guide, use the search in your IDE
+if there's a variable definition, it probably goes into the start of main.go or instead of the variables it's referencing (whatever fits you more)
+
+### modify and add lines
 ```go
-conf.theme.cyan = "\x1b[38;5;51m" // different blue
-conf.format.userHost = "→ %s%s@%s" // add arrow to first line
+// label: obvious
+// format: each %s stands for a value in return []any{...data}, you can add extra characters for formatting
+// dataFunc: getters for values
+// return []any{...data}:
+{
+	label:  "userHost",
+	format: "%s@%s",
+	dataFunc: func() []any {
+		username, _ := getUser()
+		hostname, _ := hostname()
+		return []any{username, hostname}
+	},
+},
 ```
 
-or make whole new themes:
+### change the theme a little
+```go
+conf.theme.cyan = "\x1b[38;5;51m" // different cyan
+conf.theme.red = "\x1b[38;5;196m" // custom red
+```
+
+### add a whole new theme
 ```go
 var dracula = Theme{
-    // dracula colors here
+    bold:   "\x1b[1m",
+    white:  "\x1b[0m \x1b[1m\x1b[97m",
+    cyan:   "\x1b[38;5;87m",
+    purple: "\x1b[38;5;141m",
+    red:    "\x1b[38;5;167m",
+    green:  "\x1b[38;5;114m",
 }
 conf.theme = dracula
 ```
 
-you can change your wm name (incase youre on wayland) and toggle arch package fetching
-also you obviously can change ascii art
-file paths are in util.go if you need to change anything
-
-
-ldd output:
+### arch: package count
+on by default, counts packages on arch, does nothing otherwise
+```go
+conf.countPkg = false // disable package counting
 ```
-linux-vdso.so.1
-libc.so.6 => /usr/lib/libc.so.6
-/lib64/ld-linux-x86-64.so.2 => /usr/lib64/ld-linux-x86-64.so.2
+
+### custom WM name
+wayland doesn't really do the whole "easy to fetch wm name" thing
+```go
+conf.presetWMName = "Hyprland" // set a custom WM name
+```
+
+### custom ascii
+```go
+var ascii = `
+  |\'/-..--.
+ / _ _   ,  ;
+'~='Y'~_<._./
+ <'-....__.'
+`
+```
+
+then, set the padding. it has to be at least as wide as the ascii art. 20 is prolly enough for everything but who knows
+```go
+const asciiWidth = 20
+```
+
+---
+
+## contributing:
+please
+
+## ldd output:
+this is so statically linked its insane
+```
+linux-vdso.so.1 (0x0000007f97a65000)
+libc.so.6 => /lib/aarch64-linux-gnu/libc.so.6 (0x0000007f97870000)
+/lib/ld-linux-aarch64.so.1 (0x0000007f97a28000)
 ```

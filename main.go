@@ -5,8 +5,6 @@ import (
 	"strings"
 )
 
-// config starts here
-
 type Theme struct {
 	bold   string
 	white  string
@@ -17,18 +15,15 @@ type Theme struct {
 }
 
 type Config struct {
-	countPkg     bool   // counts packages on arch, adds few ms
+	countPkg     bool   // counts packages on arch, adds few ms. does nothing if not on arch
 	presetWMName string // for wayland, blank = disabled
 	theme        Theme  // color theme
-	format       Format // format strings for each line
 }
 
-type Format struct {
-	userHost string // format for username@hostname
-	distro   string // format for os/distro line
-	memory   string // format for memory info
-	wm       string // format for window manager
-	kernel   string // format for kernel version
+type Line struct {
+	label    string
+	format   string
+	dataFunc func() []any
 }
 
 var defaultTheme = Theme{
@@ -40,69 +35,90 @@ var defaultTheme = Theme{
 	green:  "\x1b[32m",
 }
 
-var defaultFormat = Format{
-	userHost: "             %s@%s",
-	distro:   " %s%s%s%s%s %s",
-	memory:   "%s%s%s%s%sM/%sM",
-	wm:       "%s%s%s%s%s",
-	kernel:   " %s%s%s%s%s",
-}
-
 var conf = Config{
 	countPkg:     true,
 	presetWMName: "",
 	theme:        defaultTheme,
-	format:       defaultFormat,
 }
 
-// ascii art alignment done with spaces
 var ascii = `
   |\'/-..--.
  / _ _   ,  ;
 '~='Y'~_<._./
  <'-....__.'
- `
+`
+
+const asciiWidth = 15 // padding from the start
 
 func main() {
 	asciiLines := strings.Split(ascii, "\n")
 
-	username, err := getUser()
-	if err != nil {
-		fmt.Printf("failed getting username: %v\n", err)
-		return
-	}
-
-	hostname, err := hostname()
-	if err != nil {
-		fmt.Printf("failed getting hostname: %v\n", err)
-		return
-	}
-
-	mem, memFree := get_memory()
-	distroName, distroVersion := distroName()
-	wmName := wm()
-	kernel := kernelVersion()
-
-	// arch vs other distros
-	osLine := "os"
-	if distroVersion == "" {
-		osLine = "pkgs"
-	}
-
-	t := conf.theme
-	f := conf.format
-
-	lines := []string{
-		fmt.Sprintf("             %s@%s", username, hostname),
-	    fmt.Sprintf(f.distro, t.bold, t.cyan, osLine, t.white, distroName, distroVersion),
-	    fmt.Sprintf(f.memory, t.bold, t.purple, "mem", t.white, memFree, mem),
-	    fmt.Sprintf(f.wm, t.bold, t.red, "wm", t.white, wmName),
-	    fmt.Sprintf(f.kernel, t.bold, t.green, "kernel", t.white, kernel),
+	lines := []Line{
+		// line config starts here!!
+		// label: obvious
+		// format: each %s stands for a value in return []any{...data}, you can add extra characters for formatting
+		// dataFunc: getters for values
+		// return []any{...data}:
+		{
+			label:  "userHost",
+			format: "%s@%s",
+			dataFunc: func() []any {
+				username, _ := getUser()
+				hostname, _ := hostname()
+				return []any{username, hostname}
+			},
+		},
+		{
+			label:  "os",
+			format: "%s%s%s%s%s %s",
+			dataFunc: func() []any {
+				osName, osVersion := osName()
+				osLine := "os"
+				if osVersion == "" {
+					osLine = "pkgs"
+				}
+				t := conf.theme
+				return []any{t.bold, t.cyan, osLine, t.white, osName, osVersion}
+			},
+		},
+		{
+			label:  "memory",
+			format: "%s%s%s%s%sM/%sM",
+			dataFunc: func() []any {
+				mem, memFree := getMemory()
+				t := conf.theme
+				return []any{t.bold, t.purple, "mem", t.white, memFree, mem}
+			},
+		},
+		{
+			label:  "wm",
+			format: "%s%s%s%s%s",
+			dataFunc: func() []any {
+				wmName := wm()
+				t := conf.theme
+				return []any{t.bold, t.red, "wm", t.white, wmName}
+			},
+		},
+		{
+			label:  "kernel",
+			format: "%s%s%s%s%s",
+			dataFunc: func() []any {
+				kernel := kernelVersion()
+				t := conf.theme
+				return []any{t.bold, t.green, "kernel", t.white, kernel}
+			},
+		},
 	}
 
 	for i, line := range lines {
+		data := line.dataFunc()
+		formattedLine := fmt.Sprintf(line.format, data...)
+
+		padding := asciiWidth
 		if i < len(asciiLines) {
-			fmt.Printf("%s %s\n", colASCII(asciiLines, i), line)
+			padding -= len(strings.TrimRight(asciiLines[i], " "))
 		}
+
+		fmt.Printf("%s%s%s\n", colASCII(asciiLines, i), strings.Repeat(" ", padding), formattedLine)
 	}
 }
